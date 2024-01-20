@@ -34,15 +34,24 @@ def sort_list(list_name):
 
 
 def find_post(client, offset_date, date_condition):
-    print(f"> Перебираю сообщения")
+    print(f"> Перебираю записи")
     for message in client.iter_messages(source_chat, reverse=True, offset_date=offset_date):
+        # if message.id == 1629:
+        #     print(message)
+        #     print(isinstance(message, telethon.tl.patched.Message))
+        #     print(search_string_1 in message.message)
+        #     print(date_condition.date() == (
+        #             message.date + timedelta(hours=3)).date())
+        #     print(date_condition.date())
+        #     print((message.date + timedelta(hours=3)).date())
         if not message.message:
-            print(f"==> Найдено сообщение с id {message.id} без аттрибута message! Пропускаю его")
+            print(f"==> Найдена запись с id {message.id} без параметра message! Пропускаю её")
+            #print(f"==> Найдена запись с id {message} без параметра message! Пропускаю её")
             continue
         if isinstance(message,
-                      telethon.tl.patched.Message) and search_string_1 in message.message and not search_string_2 in message.message and date_condition.date() == (
+                      telethon.tl.patched.Message) and (search_string_1 in message.message or search_string_1_alt in message.message) and not search_string_2 in message.message and date_condition.date() == (
                 message.date + timedelta(hours=3)).date():
-            print(f"==> Обнаружено сообщение с id {message.id} и датой {(message.date + timedelta(hours=3)).date()}. search_string_1={search_string_1 in message.message} и search_string_2={search_string_2 in message.message}")
+            print(f"==> Обнаружена запись с id {message.id} и датой {(message.date + timedelta(hours=3)).date()}. search_string_1={search_string_1 in message.message} и search_string_2={search_string_2 in message.message}")
             print(f"==> Подходит по параметрам, выхожу из цикла")
             found_post_id = message.id
             found_post_time = message.date
@@ -55,12 +64,12 @@ def form_list(given_list, formatted_cpt, text, resulting_list):
     list_sorted = sort_list(given_list)
     if len(list_sorted) > 0:
         resulting_list.append(f"==> {formatted_cpt} {text} ({len(list_sorted)}):")
-        print(f"==> Найдено {len(list_sorted)} комментов")
+        print(f"==> Найдено {len(list_sorted)} комментариев")
         for item_a in list_sorted:
             multiline_str_a = "\n".join(["{1}".format(i + 1, person_a) for i, person_a in enumerate(list_sorted)])
         resulting_list.append(multiline_str_a)
     else:
-        print(f"==> Найдено 0 комментов")
+        print(f"==> Найдено 0 комментариев")
     return resulting_list
 
 
@@ -75,13 +84,13 @@ async def send_comments(name, api_id, api_hash, res):
 
 def messages_func(name, api_id, api_hash):
     with TelegramClient(name, api_id, api_hash) as client:
-        print(f'Ищу пост за {given_date_gmt.date()}')
+        print(f'Ищу запись за {given_date_gmt.date()}')
         current_post_id, current_post_time, next_post_time = find_post(client, given_date_utc, given_date_gmt)
         formatted_cpt = (current_post_time + timedelta(hours=3)).replace(tzinfo=None)
-        print(f"Ищу пост за {next_date_gmt.date()}")
+        print(f"Ищу запись за {next_date_gmt.date()}")
         next_post_time = find_post(client, given_date_utc, next_date_gmt)[1]
-        print(f"Время завтрашнего поста={next_post_time}")
-        print(f"Сообщения найдены, теперь ищу комменты")
+        print(f"Время завтрашней записи={next_post_time}")
+        print(f"Записи найдены, теперь ищу комментарии")
         for message in client.iter_messages(source_chat, reply_to=int(current_post_id)):
             if len(message.message) > 0:
                 if type(message.reply_to.reply_to_top_id) == int:
@@ -107,7 +116,7 @@ def messages_func(name, api_id, api_hash):
         print(f"> Отчёты, не прошедшие по формату:")
         res = form_list(list_f, formatted_cpt, 'Отчёты, не прошедшие по формату', res)
         print(f"> Ответы на комментарии, а не на пост")
-        res = form_list(list_np, formatted_cpt, 'Ответы на комментарии, а не на пост', res)
+        res = form_list(list_np, formatted_cpt, 'Ответы на комментарии, а не на запись', res)
         return res
 
 
